@@ -195,14 +195,13 @@
 
 <script>
 // ============================================================
-// CONFIGURAZIONE SUPABASE (INCOLLA QUI I TUOI DATI)
+// CONFIGURAZIONE SUPABASE
 // ============================================================
 const SUPABASE_URL = "https://rrtpbmdwvgpesqkkdjxr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJydHBibWR3dmdwZXNxa2tkanhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjE0ODAsImV4cCI6MjA5NzI5NzQ4MH0.HD8thcDsFSBZPrSQGSdO50wDJGmqtDxTKErJeOx7Xzc";
-
 // ============================================================
 
-const HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` };
+const HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
 
 let currentTorneo = null;
 let allMatches = [];      
@@ -221,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // FUNZIONE CHIAVE: Legge l'URL e carica il torneo corretto
 function inizializzaApp() {
   const urlParams = new URLSearchParams(window.location.search);
-  const slug = urlParams.get('t'); // Cerca ?t=recchio-2026 nell'URL
+  const slug = urlParams.get('t'); // Cerca ?t=slug nell'URL
 
   if (!slug) {
     mostraErrore("Nessun torneo selezionato", "Assicurati di usare il link corretto fornito dall'organizzatore (es: miosito.com/?t=codice)");
@@ -238,7 +237,7 @@ function inizializzaApp() {
       }
       currentTorneo = data[0];
       
-      // Imposta Colori e Titoli dinamici!
+      // Imposta Colori e Titoli dinamici
       document.documentElement.style.setProperty('--green', currentTorneo.colore_primario);
       document.documentElement.style.setProperty('--yellow', currentTorneo.colore_secondario);
       document.title = currentTorneo.nome;
@@ -256,20 +255,19 @@ function inizializzaApp() {
       ]);
     })
     .then(([squadre, partite]) => {
-      if(!squadre || !partite) return; // Si è fermato al controllo slug
+      if(!squadre || !partite) return; 
       
       allTeams = squadre;
       allMatches = partite;
       
-      // Nascondi loader e mostra l'app
       document.getElementById('initialLoader').style.display = 'none';
       document.getElementById('mainTabs').style.display = 'flex';
       
       updateAuthIcon();
       processDates();
-      switchTab('homeScreen'); // Lancia l'Home Screen
+      switchTab('homeScreen'); 
     })
-    .catch(err => mostraErrore("Errore di Rete", "Impossibile collegarsi al server Supabase. Controlla le chiavi API."));
+    .catch(err => mostraErrore("Errore di Rete", "Impossibile collegarsi al server Supabase."));
 }
 
 function mostraErrore(titolo, sottotitolo) {
@@ -343,7 +341,7 @@ function renderCurrentDay() {
     const isLive = (m.stato === 'LIVE');
 
     let badgeText = currentTorneo.formato === 'UNICO' ? `CAMPIONATO` : `GIRONE ${m.girone_fase}`;
-    if (!['A','B','C','D','UNICO','CAMPIONATO'].includes(m.girone_fase.toUpperCase())) badgeText = m.girone_fase; // Es. OTTAVI
+    if (!['A','B','C','D','UNICO','CAMPIONATO'].includes(m.girone_fase.toUpperCase())) badgeText = m.girone_fase; 
 
     let isKnockout = !['A','B','C','D','UNICO','CAMPIONATO'].includes(m.girone_fase.toUpperCase());
     let badgeColor = isKnockout ? "var(--yellow)" : "var(--green)";
@@ -386,7 +384,6 @@ function loadStandings() {
   document.getElementById('historyList').innerHTML = '';
 
   let groups = {};
-  // Inizializza tutte le squadre a zero punti
   allTeams.forEach(t => {
     let g = currentTorneo.formato === 'UNICO' ? 'UNICO' : (t.girone || 'A');
     if(!groups[g]) groups[g] = {};
@@ -418,13 +415,12 @@ function loadStandings() {
         if(!fasiFinali[p.girone_fase]) fasiFinali[p.girone_fase] = [];
         fasiFinali[p.girone_fase].push(p);
       }
-    } else if (isKnockout) { // Mostra anche partite knockout non giocate
+    } else if (isKnockout) {
         if(!fasiFinali[p.girone_fase]) fasiFinali[p.girone_fase] = [];
         fasiFinali[p.girone_fase].push(p);
     }
   });
 
-  // Ordina per punti e crea l'HTML dei gironi
   let classificheHtml = '';
   for(let g in groups) {
     let arr = Object.values(groups[g]).sort((a,b) => b.punti - a.punti);
@@ -436,7 +432,6 @@ function loadStandings() {
   }
   document.getElementById('gironiContainer').innerHTML = classificheHtml || `<p style="color:var(--muted);text-align:center;">Nessuna squadra trovata</p>`;
 
-  // Render Fase Finale
   let order = ["OTTAVI", "QUARTI", "SEMIFINALE", "SEMIFINALI", "FINALE 3/4", "FINALE"];
   let stageKeys = Object.keys(fasiFinali).sort((a,b) => {
     let iA = order.indexOf(a.toUpperCase()); let iB = order.indexOf(b.toUpperCase());
@@ -454,7 +449,6 @@ function loadStandings() {
       document.getElementById('knockoutContainer').innerHTML = koHtml;
   }
 
-  // Render Storico (Più recenti prima)
   history.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   if(history.length === 0) document.getElementById('historyList').innerHTML = `<p style="color:var(--muted);text-align:center;font-size:12px;">Nessuna partita giocata</p>`;
   else document.getElementById('historyList').innerHTML = history.map(p => renderMatchHistoryCard(p)).join('');
@@ -513,24 +507,33 @@ function renderMarcatoriClassifica() {
   tbody.innerHTML = scorersArray.map((s, idx) => `<tr><td style="font-weight:600;">${idx + 1}. ${s.nome}</td><td class="pt">${s.gol}</td></tr>`).join('');
 }
 
-// --- GESTIONE AUTENTICAZIONE E SALVATAGGIO SU SUPABASE ---
+// === GESTIONE AUTENTICAZIONE E SALVATAGGIO TRAMITE RPC (SICURO) ===
 function toggleAuth() {
   if (adminPin) {
-    if(confirm("Vuoi uscire dalla modalità Admin?")) {
+    if(confirm("Vuoi uscire dalla modalità Organizzatore?")) {
       adminPin = null; sessionStorage.removeItem('adminPin');
-      updateAuthIcon(); renderCurrentDay(); showToast("Uscito dalla modalità Admin");
+      updateAuthIcon(); renderCurrentDay(); showToast("Uscito dalla modalità Organizzatore");
     }
   } else {
-    let pin = prompt("Inserisci il PIN per gestire i risultati di questo torneo:");
+    let pin = prompt("Inserisci il PIN ORGANIZZATORE per i risultati:");
     if (!pin) return;
     
-    // Controlliamo il PIN direttamente con i dati del torneo caricato
-    if (pin === currentTorneo.pin_admin) {
+    // Il controllo avviene dento Supabase, noi non conosciamo il PIN reale!
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/login_org`, { 
+      method: 'POST', 
+      headers: HEADERS, 
+      body: JSON.stringify({ p_slug: currentTorneo.slug, p_pin: pin }) 
+    })
+    .then(res => res.json())
+    .then(valid => {
+      if(valid) {
         adminPin = pin; sessionStorage.setItem('adminPin', pin);
-        updateAuthIcon(); renderCurrentDay(); showToast("Modalità Admin attivata!");
-    } else {
+        updateAuthIcon(); renderCurrentDay(); showToast("Modalità Organizzatore attivata!");
+      } else {
         showToast("PIN Errato!", true);
-    }
+      }
+    })
+    .catch(() => showToast("Errore di verifica", true));
   }
 }
 
@@ -556,35 +559,33 @@ function submitResult() {
   const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = '⏳ Salvataggio...';
   
   const payload = {
-    stato: document.getElementById('matchStatus').value,
-    gol_a: document.getElementById('scoreA').value, 
-    gol_b: document.getElementById('scoreB').value,
-    marcatori_a: document.getElementById('marcatoriA').value.trim(), 
-    marcatori_b: document.getElementById('marcatoriB').value.trim(), 
-    note: document.getElementById('notePartita').value.trim()
+    p_partita_id: currentMatch.id,
+    p_pin: adminPin,
+    p_stato: document.getElementById('matchStatus').value,
+    p_gola: document.getElementById('scoreA').value, 
+    p_golb: document.getElementById('scoreB').value,
+    p_marca: document.getElementById('marcatoriA').value.trim(), 
+    p_marcb: document.getElementById('marcatoriB').value.trim(), 
+    p_note: document.getElementById('notePartita').value.trim()
   };
 
-  // Esegue l'aggiornamento (PATCH) diretto sulla riga in Supabase
-  fetch(`${SUPABASE_URL}/rest/v1/partite?id=eq.${currentMatch.id}`, {
-    method: 'PATCH',
-    headers: { ...HEADERS, "Content-Type": "application/json" },
+  // Chiama il buttafuori "salva_risultato"
+  fetch(`${SUPABASE_URL}/rest/v1/rpc/salva_risultato`, {
+    method: 'POST',
+    headers: HEADERS,
     body: JSON.stringify(payload)
   })
   .then(res => {
-    if(!res.ok) throw new Error("Errore salvataggio");
+    if(!res.ok) throw new Error("Errore Auth");
     btn.disabled = false; btn.textContent = '📤 SALVA RISULTATO';
     showToast("Risultato salvato!");
-    
-    // Ricarichiamo le partite in modo silenzioso per aggiornare la UI
     return fetch(`${SUPABASE_URL}/rest/v1/partite?torneo_id=eq.${currentTorneo.id}`, { headers: HEADERS }).then(r=>r.json());
   })
   .then(partite => {
-    allMatches = partite;
-    switchTab('homeScreen');
-    processDates();
+    allMatches = partite; switchTab('homeScreen'); processDates();
   })
   .catch(err => {
-    btn.disabled = false; btn.textContent = '📤 SALVA RISULTATO'; showToast('❌ Errore di connessione', true);
+    btn.disabled = false; btn.textContent = '📤 SALVA RISULTATO'; showToast('❌ PIN Non più valido o errore', true);
   });
 }
 
